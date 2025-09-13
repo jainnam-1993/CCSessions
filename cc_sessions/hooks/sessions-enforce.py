@@ -137,6 +137,21 @@ if discussion_mode and tool_name in config.get("blocked_tools", DEFAULT_CONFIG["
     print(f"[DAIC: Tool Blocked] You're in discussion mode. The {tool_name} tool is not allowed. You need to seek alignment first.", file=sys.stderr)
     sys.exit(2)  # Block with feedback
 
+# Block Serena MCP file modification tools in discussion mode
+serena_file_modification_tools = [
+    "mcp__serena__create_text_file",
+    "mcp__serena__replace_regex",
+    "mcp__serena__delete_lines",
+    "mcp__serena__replace_lines",
+    "mcp__serena__insert_at_line",
+    "mcp__serena__replace_symbol_body",
+    "mcp__serena__insert_after_symbol",
+    "mcp__serena__insert_before_symbol"
+]
+if discussion_mode and tool_name in serena_file_modification_tools:
+    print(f"[DAIC: Tool Blocked] You're in discussion mode. The {tool_name} tool is not allowed. You need to seek alignment first.", file=sys.stderr)
+    sys.exit(2)  # Block with feedback
+
 # Check if we're in a subagent context and trying to edit .claude/state files
 project_root = get_project_root()
 subagent_flag = project_root / '.claude' / 'state' / 'in_subagent_context.flag'

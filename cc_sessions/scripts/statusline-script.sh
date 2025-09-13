@@ -199,15 +199,21 @@ count_open_tasks() {
     fi
 }
 
+# Get current directory with color
+get_current_directory() {
+    green="[38;5;114m"   # AAD94C string green
+    reset="[0m"
+    # Get just the directory name (not full path)
+    dir_name=$(basename "$cwd")
+    echo -e "${green}📁 $dir_name${reset}"
+}
+
 # Build the complete statusline
 progress_info=$(calculate_context)
 task_info=$(get_current_task)
 daic_info=$(get_daic_mode)
-files_info=$(count_edited_files)
-tasks_info=$(count_open_tasks)
+directory_info=$(get_current_directory)
 
-# Output the complete statusline in two lines with color support
-# Line 1: Progress bar | Current task
-# Line 2: DAIC mode | Files edited | Open tasks
-echo -e "$progress_info | $task_info"
-echo -e "$daic_info | $files_info | $tasks_info"
+# Output the complete statusline in one line with color support
+# Format: Progress bar | Task | DAIC mode | Current directory
+echo -e "$progress_info | $task_info | $daic_info | $directory_info"

@@ -94,10 +94,51 @@ Specifically, avoid long prompts when invoking the logging or context-refinement
 - Code should be obvious and easy to follow
 - Same structure in every file reduces cognitive load
 
-## Available Protocols
+## Protocol Management
 
-When needed, these protocols guide specific workflows:
-- **sessions/protocols/task-creation.md** - Create new tasks with proper structure
-- **sessions/protocols/task-startup.md** - Initialize new task work
-- **sessions/protocols/task-completion.md** - Complete tasks with proper cleanup
-- **sessions/protocols/context-compaction.md** - Compact context when approaching limits
+### CRITICAL: Protocol Recognition Principle
+
+**When the user mentions protocols:**
+
+1. **EXPLICIT requests → Read protocol first, then execute**
+   - Clear commands like "let's compact", "complete the task", "create a new task"
+   - Read the relevant protocol file immediately and proceed
+
+2. **VAGUE indications → Confirm first, read only if confirmed**
+   - Ambiguous statements like "I think we're done", "context seems full"
+   - Ask if they want to run the protocol BEFORE reading the file
+   - Only read the protocol file after they confirm
+
+**Never attempt to run protocols from memory. Always read the protocol file before executing.**
+
+### Protocol Files and Recognition
+
+These protocols guide specific workflows:
+
+1. **sessions/protocols/task-creation.md** - Creating new tasks
+   - EXPLICIT: "create a new task", "let's make a task for X"
+   - VAGUE: "we should track this", "might need a task for that"
+
+2. **sessions/protocols/task-startup.md** - Beginning work on existing tasks  
+   - EXPLICIT: "switch to task X", "let's work on task Y"
+   - VAGUE: "maybe we should look at the other thing"
+
+3. **sessions/protocols/task-completion.md** - Completing and closing tasks
+   - EXPLICIT: "complete the task", "finish this task", "mark it done"
+   - VAGUE: "I think we're done", "this might be finished"
+
+4. **sessions/protocols/context-compaction.md** - Managing context window limits
+   - EXPLICIT: "let's compact", "run context compaction", "compact and restart"
+   - VAGUE: "context is getting full", "we're using a lot of tokens"
+
+### Behavioral Examples
+
+**Explicit → Read and execute:**
+- User: "Let's complete this task"
+- You: [Read task-completion.md first] → "I'll complete the task now. Running the logging agent..."
+
+**Vague → Confirm before reading:**
+- User: "I think we might be done here"
+- You: "Would you like me to run the task completion protocol?"
+- User: "Yes"
+- You: [NOW read task-completion.md] → "I'll complete the task now..."

@@ -69,6 +69,13 @@ input_data = json.load(sys.stdin)
 tool_name = input_data.get("tool_name", "")
 tool_input = input_data.get("tool_input", {})
 
+# DEBUG: Log tool information
+import datetime
+debug_log = "/tmp/daic-debug.log"
+with open(debug_log, "a") as f:
+    timestamp = datetime.datetime.now().isoformat()
+    f.write(f"{timestamp} - Tool: {tool_name}, Input: {tool_input}\n")
+
 # Load configuration
 config = load_config()
 

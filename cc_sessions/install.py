@@ -465,7 +465,7 @@ class SessionsInstaller:
             ],
             "PreToolUse": [
                 {
-                    "matcher": "Write|Edit|MultiEdit|Task|Bash",
+                    "matcher": "Write|Edit|MultiEdit|Task|Bash|mcp__serena__.*",
                     "hooks": [
                         {
                             "type": "command",

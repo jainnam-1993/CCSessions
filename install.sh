@@ -372,6 +372,10 @@ cat > "$PROJECT_ROOT/sessions/sessions-config.json" << EOF
   "api_mode": $api_mode,
   "trigger_phrases": $triggers,
   "blocked_tools": $blocked_tools,
+  "mcp_blocking": {
+    "enabled": true,
+    "patterns": ["create", "write", "edit", "replace", "insert", "delete", "modify", "update", "append", "prepend", "remove", "change", "patch", "set"]
+  },
   "task_detection": {
     "enabled": true
   },
@@ -404,7 +408,7 @@ settings_content='{
     ],
     "PreToolUse": [
       {
-        "matcher": "Write|Edit|MultiEdit|Task|Bash",
+        "matcher": "Write|Edit|MultiEdit|Task|Bash|mcp__.*",
         "hooks": [
           {
             "type": "command",

@@ -94,7 +94,8 @@ if tool_name == "Bash":
         r'\brm\b',     # remove
         r'\bmkdir\b',  # make directory
         r'\btouch\b',  # create/update file
-        r'\bsed\s+(?!-n)',  # sed without -n flag
+        r'\bsed\s+(-[a-zA-Z]*i\b|-i\b)',  # sed with -i flag (in-place editing)
+        r'\bsed\s+(?!-n\b)',  # sed without -n flag (read-only)
         r'\bnpm\s+install',  # npm install
         r'\bpip\s+install',  # pip install
         r'\bapt\s+install',  # apt install
@@ -144,20 +145,24 @@ if discussion_mode and tool_name in config.get("blocked_tools", DEFAULT_CONFIG["
     print(f"[DAIC: Tool Blocked] You're in discussion mode. The {tool_name} tool is not allowed. You need to seek alignment first.", file=sys.stderr)
     sys.exit(2)  # Block with feedback
 
-# Block Serena MCP file modification tools in discussion mode
-serena_file_modification_tools = [
-    "mcp__serena__create_text_file",
-    "mcp__serena__replace_regex",
-    "mcp__serena__delete_lines",
-    "mcp__serena__replace_lines",
-    "mcp__serena__insert_at_line",
-    "mcp__serena__replace_symbol_body",
-    "mcp__serena__insert_after_symbol",
-    "mcp__serena__insert_before_symbol"
-]
-if discussion_mode and tool_name in serena_file_modification_tools:
-    print(f"[DAIC: Tool Blocked] You're in discussion mode. The {tool_name} tool is not allowed. You need to seek alignment first.", file=sys.stderr)
-    sys.exit(2)  # Block with feedback
+# Pattern-based blocking for MCP file modification tools
+# This catches any MCP tool that appears to modify files, regardless of server
+mcp_config = config.get("mcp_blocking", {})
+if mcp_config.get("enabled", True) and discussion_mode and tool_name.startswith("mcp__"):
+    # Get patterns from config or use defaults
+    file_modification_patterns = mcp_config.get("patterns", [
+        "create", "write", "edit", "replace", "insert", "delete", "modify",
+        "update", "append", "prepend", "remove", "change", "patch", "set"
+    ])
+
+    # Extract the tool method name (after the last __)
+    tool_method = tool_name.split("__")[-1].lower() if "__" in tool_name else tool_name.lower()
+
+    # Check if the tool method contains any file modification pattern
+    if any(pattern in tool_method for pattern in file_modification_patterns):
+        print(f"[DAIC: MCP Tool Blocked] You're in discussion mode. The {tool_name} tool appears to modify files and is not allowed.", file=sys.stderr)
+        print(f"Detected file modification pattern in MCP tool. Seek user alignment first.", file=sys.stderr)
+        sys.exit(2)  # Block with feedback
 
 # Check if we're in a subagent context and trying to edit .claude/state files
 project_root = get_project_root()

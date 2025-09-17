@@ -1,6 +1,6 @@
 # cc-sessions CLAUDE.md
 
-## Purpose
+## Purpose (Testing MCP blocking)
 Complete Claude Code Sessions framework that enforces Discussion-Alignment-Implementation-Check (DAIC) methodology for AI pair programming workflows.
 
 ## Narrative Summary
@@ -36,6 +36,7 @@ The framework includes persistent task management with git branch enforcement, c
 
 ### DAIC Enforcement
 - Blocks Edit/Write/MultiEdit tools in discussion mode
+- Pattern-based MCP tool blocking catches file modification tools across all MCP servers
 - Requires explicit trigger phrases to enter implementation mode
 - Configurable trigger phrases via `/add-trigger` command
 - Read-only Bash commands allowed in discussion mode

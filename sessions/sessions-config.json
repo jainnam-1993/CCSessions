@@ -1,25 +1,16 @@
 {
   "developer_name": "Naman",
-  "trigger_phrases": [
-    "make it so",
-    "run that",
-    "go ahead",
-    "yert",
-    "yes",
-    "proceed",
-    "implement"
-  ],
-  "blocked_tools": [
-    "Edit",
-    "Write",
-    "MultiEdit",
-    "NotebookEdit"
-  ],
+  "api_mode": false,
+  "trigger_phrases": ["make it so", "run that", "go ahead", "yert", "yes", "proceed", "implement"],
+  "blocked_tools": ["Edit", "Write", "MultiEdit", "NotebookEdit"],
+  "mcp_blocking": {
+    "enabled": true,
+    "patterns": ["create", "write", "edit", "replace", "insert", "delete", "modify", "update", "append", "prepend", "remove", "change", "patch", "set"]
+  },
   "task_detection": {
     "enabled": true
   },
   "branch_enforcement": {
     "enabled": true
-  },
-  "api_mode": false
+  }
 }

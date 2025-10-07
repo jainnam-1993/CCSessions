@@ -18,10 +18,10 @@ calculate_context() {
     transcript_path=$(echo "$input" | python3 -c "import sys, json; data = json.load(sys.stdin); print(data.get('transcript_path', ''))")
     
     # Determine usable context limit (80% of theoretical before auto-compact)
-    if [[ "$model_name" == *"Sonnet"* ]]; then
-        context_limit=800000   # 800k usable for 1M Sonnet models
+    if [[ "$model_name" == *"1M"* ]]; then
+        context_limit=800000   # 800k usable for 1M context models
     else
-        context_limit=160000   # 160k usable for 200k models (Opus, etc.)
+        context_limit=160000   # 160k usable for 200k models (all Sonnets, Opus, Haiku)
     fi
     
     if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
@@ -52,12 +52,11 @@ try:
         except:
             continue
     
-    # Calculate context length (input + cache tokens only, NOT output)
+    # Calculate context length (input + cache read only, NOT output or cache creation)
     if most_recent_usage:
         context_length = (
             most_recent_usage.get('input_tokens', 0) +
-            most_recent_usage.get('cache_read_input_tokens', 0) +
-            most_recent_usage.get('cache_creation_input_tokens', 0)
+            most_recent_usage.get('cache_read_input_tokens', 0)
         )
         print(context_length)
     else:

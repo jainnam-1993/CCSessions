@@ -87,18 +87,10 @@ send "\r"
 
 # Wait for ultrathink prompt
 expect "Enable automatic ultrathink for best performance? (y/n):"
-send "y\r"
+send "n\r"
 
 # Wait for advanced options prompt
 expect "Configure advanced options? (y/n):"
-send "y\r"
-
-# Handle tool blocking configuration
-expect "Modify blocked tools list? (y/n):"
-send "n\r"
-
-# Wait for task prefix prompt
-expect "Customize task prefixes? (y/n):"
 send "n\r"
 
 # Wait for installation to complete
@@ -109,6 +101,5 @@ echo "✅ cc-sessions installation completed!"
 echo ""
 echo "Next steps:"
 echo "1. Restart Claude Code to activate sessions hooks"
-echo "2. Create your first task with: 'Create a new task'"
-echo "3. Use DAIC workflow: discuss first, then say trigger phrases to implement:"
+echo "2. Use DAIC workflow: discuss first, then say trigger phrases to implement:"
 echo "   • 'make it so' • 'yes' • 'proceed' • 'implement' • 'go ahead' • 'run that'"

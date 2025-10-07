@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Claude Code Sessions - Installation Script
-# This script sets up the sessions framework for task management
+# This script sets up the sessions framework with DAIC workflow enforcement
 
 set -e  # Exit on error
 
@@ -69,44 +69,19 @@ fi
 echo "Creating directory structure..."
 mkdir -p "$PROJECT_ROOT/.claude/hooks"
 mkdir -p "$PROJECT_ROOT/.claude/state"
-mkdir -p "$PROJECT_ROOT/.claude/agents"
 mkdir -p "$PROJECT_ROOT/.claude/commands"
-mkdir -p "$PROJECT_ROOT/sessions/tasks/done"
-mkdir -p "$PROJECT_ROOT/sessions/protocols"
-
-# Install Python dependencies
-echo "Installing Python dependencies..."
-pip3 install tiktoken --quiet || pip install tiktoken --quiet
+mkdir -p "$PROJECT_ROOT/sessions"
 
 # Copy hooks
 echo "Installing hooks..."
 cp "$SCRIPT_DIR/cc_sessions/hooks/"*.py "$PROJECT_ROOT/.claude/hooks/"
 chmod +x "$PROJECT_ROOT/.claude/hooks/"*.py
 
-# Copy protocols
-echo "Installing protocols..."
-cp "$SCRIPT_DIR/cc_sessions/protocols/"*.md "$PROJECT_ROOT/sessions/protocols/"
-
-# Copy agents
-echo "Installing agent definitions..."
-cp "$SCRIPT_DIR/cc_sessions/agents/"*.md "$PROJECT_ROOT/.claude/agents/"
-
-# Copy templates
-echo "Installing templates..."
-cp "$SCRIPT_DIR/cc_sessions/templates/TEMPLATE.md" "$PROJECT_ROOT/sessions/tasks/"
-
 # Copy commands
 echo "Installing commands..."
 for file in "$SCRIPT_DIR/cc_sessions/commands"/*.md; do
     [ -e "$file" ] && cp "$file" "$PROJECT_ROOT/.claude/commands/"
 done
-
-# Copy knowledge files
-echo "Installing Claude Code knowledge base..."
-mkdir -p "$PROJECT_ROOT/sessions/knowledge"
-if [ -d "$SCRIPT_DIR/cc_sessions/knowledge/claude-code" ]; then
-    cp -r "$SCRIPT_DIR/cc_sessions/knowledge/claude-code" "$PROJECT_ROOT/sessions/knowledge/"
-fi
 
 # Install daic command
 echo "Installing daic command..."
@@ -143,10 +118,9 @@ echo
 echo -e "${BOLD}${MAGENTA}★ STATUSLINE INSTALLATION${NC}"
 echo -e "${DIM}$(printf '─%.0s' {1..60})${NC}"
 echo -e "${WHITE}  Real-time status display in Claude Code showing:${NC}"
-echo -e "${CYAN}    • Current task and DAIC mode${NC}"
+echo -e "${CYAN}    • DAIC mode status${NC}"
 echo -e "${CYAN}    • Token usage with visual progress bar${NC}"
 echo -e "${CYAN}    • Modified file counts${NC}"
-echo -e "${CYAN}    • Open task count${NC}"
 echo
 
 while true; do
@@ -317,52 +291,6 @@ if [ "$advanced_config" = "y" ]; then
     fi
 fi
 
-# Task prefixes (advanced)
-task_prefixes_config=""
-if [ "$advanced_config" = "y" ]; then
-    echo
-    echo -e "${BOLD}${MAGENTA}★ TASK PREFIX CONFIGURATION${NC}"
-    echo -e "${DIM}$(printf '─%.0s' {1..60})${NC}"
-    echo -e "${WHITE}  Task prefixes organize work by priority and type${NC}"
-    echo
-    echo -e "${CYAN}  Current prefixes:${NC}"
-    echo -e "${WHITE}    → h- (high priority)${NC}"
-    echo -e "${WHITE}    → m- (medium priority)${NC}"
-    echo -e "${WHITE}    → l- (low priority)${NC}"
-    echo -e "${WHITE}    → ?- (investigate/research)${NC}"
-    echo
-    
-    while true; do
-        read -p "$(echo -e ${CYAN})  Customize task prefixes? (y/n): $(echo -e ${NC})" -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            customize_prefixes="y"
-            break
-        elif [[ $REPLY =~ ^[Nn]$ ]]; then
-            customize_prefixes="n"
-            break
-        else
-            echo -e "${YELLOW}  Please enter y or n${NC}"
-        fi
-    done
-    
-    if [[ $customize_prefixes == "y" ]]; then
-        read -p "$(echo -e ${CYAN})  High priority prefix [h-]: $(echo -e ${NC})" high_prefix
-        read -p "$(echo -e ${CYAN})  Medium priority prefix [m-]: $(echo -e ${NC})" med_prefix
-        read -p "$(echo -e ${CYAN})  Low priority prefix [l-]: $(echo -e ${NC})" low_prefix
-        read -p "$(echo -e ${CYAN})  Investigate prefix [?-]: $(echo -e ${NC})" inv_prefix
-        
-        high_prefix="${high_prefix:-h-}"
-        med_prefix="${med_prefix:-m-}"
-        low_prefix="${low_prefix:-l-}"
-        inv_prefix="${inv_prefix:-?-}"
-        
-        task_prefixes_config=',
-  "task_prefixes": {
-    "priority": ["'$high_prefix'", "'$med_prefix'", "'$low_prefix'", "'$inv_prefix'"]
-  }'
-        echo -e "${GREEN}  ✓ Task prefixes updated${NC}"
-    fi
-fi
 
 # Create configuration file
 echo -e "${CYAN}Creating configuration...${NC}"
@@ -375,13 +303,7 @@ cat > "$PROJECT_ROOT/sessions/sessions-config.json" << EOF
   "mcp_blocking": {
     "enabled": true,
     "patterns": ["create", "write", "edit", "replace", "insert", "delete", "modify", "update", "append", "prepend", "remove", "change", "patch", "set"]
-  },
-  "task_detection": {
-    "enabled": true
-  },
-  "branch_enforcement": {
-    "enabled": true
-  }$task_prefixes_config
+  }
 }
 EOF
 
@@ -413,15 +335,6 @@ settings_content='{
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/sessions-enforce.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/task-transcript-link.py"
           }
         ]
       }
@@ -470,15 +383,6 @@ echo -e "${GREEN}✓ Sessions hooks configured in settings.json${NC}"
 # Initialize DAIC state
 echo '{"mode": "discussion"}' > "$PROJECT_ROOT/.claude/state/daic-mode.json"
 
-# Create initial task state
-cat > "$PROJECT_ROOT/.claude/state/current_task.json" << EOF
-{
-  "task": null,
-  "branch": null,
-  "services": [],
-  "updated": "$(date +%Y-%m-%d)"
-}
-EOF
 
 # CLAUDE.md Integration
 echo
@@ -522,7 +426,7 @@ echo -e "${BOLD}${CYAN}  Installation Summary:${NC}"
 echo -e "${DIM}  ─────────────────────${NC}"
 echo -e "${GREEN}  ✓ Directory structure created${NC}"
 echo -e "${GREEN}  ✓ Hooks installed and configured${NC}"
-echo -e "${GREEN}  ✓ Protocols and agents deployed${NC}"
+echo -e "${GREEN}  ✓ Commands deployed${NC}"
 echo -e "${GREEN}  ✓ daic command available globally${NC}"
 echo -e "${GREEN}  ✓ Configuration saved${NC}"
 echo -e "${GREEN}  ✓ DAIC state initialized (Discussion mode)${NC}"
@@ -548,11 +452,7 @@ echo
 echo -e "${WHITE}  1. Restart Claude Code to activate the sessions hooks${NC}"
 echo -e "${DIM}     → Close and reopen Claude Code${NC}"
 echo
-echo -e "${WHITE}  2. Create your first task:${NC}"
-echo -e "${CYAN}     → Tell Claude: \"Create a new task\"${NC}"
-echo -e "${CYAN}     → Or: \"Create a task for implementing feature X\"${NC}"
-echo
-echo -e "${WHITE}  3. Start working with the DAIC workflow:${NC}"
+echo -e "${WHITE}  2. Start working with the DAIC workflow:${NC}"
 echo -e "${DIM}     → Discuss approach first${NC}"
 echo -e "${DIM}     → Say \"make it so\" to implement${NC}"
 echo -e "${DIM}     → Run \"daic\" to return to discussion${NC}"

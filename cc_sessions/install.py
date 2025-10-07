@@ -85,9 +85,7 @@ class SessionsInstaller:
         self.config = {
             "developer_name": "the developer",
             "trigger_phrases": ["make it so", "run that", "go ahead", "yert"],
-            "blocked_tools": ["Edit", "Write", "MultiEdit", "NotebookEdit"],
-            "task_detection": {"enabled": True},
-            "branch_enforcement": {"enabled": True}
+            "blocked_tools": ["Edit", "Write", "MultiEdit", "NotebookEdit"]
         }
     
     def detect_project_directory(self) -> Path:
@@ -134,27 +132,14 @@ class SessionsInstaller:
         
         dirs = [
             ".claude/hooks",
-            ".claude/state", 
-            ".claude/agents",
+            ".claude/state",
             ".claude/commands",
-            "sessions/tasks",
-            "sessions/tasks/done",
-            "sessions/protocols",
-            "sessions/knowledge"
+            "sessions"
         ]
         
         for dir_path in dirs:
             (self.project_root / dir_path).mkdir(parents=True, exist_ok=True)
     
-    def install_python_deps(self) -> None:
-        """Install Python dependencies"""
-        print(color("Installing Python dependencies...", Colors.CYAN))
-        try:
-            pip_cmd = "pip3" if command_exists("pip3") else "pip"
-            subprocess.run([pip_cmd, "install", "tiktoken", "--quiet"], 
-                         capture_output=True, check=True)
-        except subprocess.CalledProcessError:
-            print(color("⚠️  Could not install tiktoken. You may need to install it manually.", Colors.YELLOW))
     
     def copy_files(self) -> None:
         """Copy all necessary files to the project"""
@@ -168,28 +153,7 @@ class SessionsInstaller:
                 if os.name != 'nt':
                     dest.chmod(0o755)
         
-        # Copy protocols
-        print(color("Installing protocols...", Colors.CYAN))
-        protocols_dir = self.package_dir / "protocols"
-        if protocols_dir.exists():
-            for protocol_file in protocols_dir.glob("*.md"):
-                dest = self.project_root / "sessions/protocols" / protocol_file.name
-                shutil.copy2(protocol_file, dest)
         
-        # Copy agents
-        print(color("Installing agent definitions...", Colors.CYAN))
-        agents_dir = self.package_dir / "agents"
-        if agents_dir.exists():
-            for agent_file in agents_dir.glob("*.md"):
-                dest = self.project_root / ".claude/agents" / agent_file.name
-                shutil.copy2(agent_file, dest)
-        
-        # Copy templates
-        print(color("Installing templates...", Colors.CYAN))
-        template_file = self.package_dir / "templates/TEMPLATE.md"
-        if template_file.exists():
-            dest = self.project_root / "sessions/tasks/TEMPLATE.md"
-            shutil.copy2(template_file, dest)
         
         # Copy commands
         print(color("Installing commands...", Colors.CYAN))
@@ -199,14 +163,6 @@ class SessionsInstaller:
                 dest = self.project_root / ".claude/commands" / command_file.name
                 shutil.copy2(command_file, dest)
         
-        # Copy knowledge files
-        knowledge_dir = self.package_dir / "knowledge/claude-code"
-        if knowledge_dir.exists():
-            print(color("Installing Claude Code knowledge base...", Colors.CYAN))
-            dest_dir = self.project_root / "sessions/knowledge/claude-code"
-            if dest_dir.exists():
-                shutil.rmtree(dest_dir)
-            shutil.copytree(knowledge_dir, dest_dir)
     
     def install_daic_command(self) -> None:
         """Install the daic command globally"""
@@ -277,10 +233,9 @@ class SessionsInstaller:
         print(color(f"\n\n★ STATUSLINE INSTALLATION", Colors.BRIGHT + Colors.MAGENTA))
         print(color("─" * 60, Colors.DIM))
         print(color("  Real-time status display in Claude Code showing:", Colors.WHITE))
-        print(color("    • Current task and DAIC mode", Colors.CYAN))
+        print(color("    • DAIC mode status", Colors.CYAN))
         print(color("    • Token usage with visual progress bar", Colors.CYAN))
         print(color("    • Modified file counts", Colors.CYAN))
-        print(color("    • Open task count", Colors.CYAN))
         print()
         
         install_statusline = input(color("  Install statusline? (y/n): ", Colors.CYAN))
@@ -404,30 +359,6 @@ class SessionsInstaller:
                         self.config["blocked_tools"] = blocked_list
                         print(color("  ✓ Tool blocking configuration saved", Colors.GREEN))
             
-            # Task prefix configuration
-            print(color(f"\n\n★ TASK PREFIX CONFIGURATION", Colors.BRIGHT + Colors.MAGENTA))
-            print(color("─" * 60, Colors.DIM))
-            print(color("  Task prefixes organize work by priority and type", Colors.WHITE))
-            print()
-            print(color("  Current prefixes:", Colors.CYAN))
-            print(color("    → h- (high priority)", Colors.WHITE))
-            print(color("    → m- (medium priority)", Colors.WHITE))
-            print(color("    → l- (low priority)", Colors.WHITE))
-            print(color("    → ?- (investigate/research)", Colors.WHITE))
-            print()
-            
-            customize_prefixes = input(color("  Customize task prefixes? (y/n): ", Colors.CYAN))
-            if customize_prefixes.lower() == 'y':
-                high = input(color("  High priority prefix [h-]: ", Colors.CYAN)) or 'h-'
-                med = input(color("  Medium priority prefix [m-]: ", Colors.CYAN)) or 'm-'
-                low = input(color("  Low priority prefix [l-]: ", Colors.CYAN)) or 'l-'
-                inv = input(color("  Investigate prefix [?-]: ", Colors.CYAN)) or '?-'
-                
-                self.config["task_prefixes"] = {
-                    "priority": [high, med, low, inv]
-                }
-                
-                print(color("  ✓ Task prefixes updated", Colors.GREEN))
     
     def save_config(self) -> None:
         """Save configuration files"""
@@ -473,15 +404,6 @@ class SessionsInstaller:
                         }
                     ]
                 },
-                {
-                    "matcher": "Task",
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/task-transcript-link.py" if os.name != 'nt' else "python \"%CLAUDE_PROJECT_DIR%\\.claude\\hooks\\task-transcript-link.py\""
-                        }
-                    ]
-                }
             ],
             "PostToolUse": [
                 {
@@ -534,15 +456,6 @@ class SessionsInstaller:
         daic_state = self.project_root / ".claude/state/daic-mode.json"
         daic_state.write_text(json.dumps({"mode": "discussion"}, indent=2))
         
-        # Create initial task state
-        current_date = datetime.now().strftime("%Y-%m-%d")
-        task_state = self.project_root / ".claude/state/current_task.json"
-        task_state.write_text(json.dumps({
-            "task": None,
-            "branch": None,
-            "services": [],
-            "updated": current_date
-        }, indent=2))
     
     def setup_claude_md(self) -> None:
         """Set up CLAUDE.md integration"""
@@ -601,7 +514,6 @@ class SessionsInstaller:
         try:
             self.check_dependencies()
             self.create_directories()
-            self.install_python_deps()
             self.copy_files()
             self.install_daic_command()
             self.configure()
@@ -620,7 +532,7 @@ class SessionsInstaller:
             print(color("  ─────────────────────", Colors.DIM))
             print(color("  ✓ Directory structure created", Colors.GREEN))
             print(color("  ✓ Hooks installed and configured", Colors.GREEN))
-            print(color("  ✓ Protocols and agents deployed", Colors.GREEN))
+            print(color("  ✓ Commands deployed", Colors.GREEN))
             print(color("  ✓ daic command available globally", Colors.GREEN))
             print(color("  ✓ Configuration saved", Colors.GREEN))
             print(color("  ✓ DAIC state initialized (Discussion mode)", Colors.GREEN))
@@ -644,11 +556,7 @@ class SessionsInstaller:
             print(color("  1. Restart Claude Code to activate the sessions hooks", Colors.WHITE))
             print(color("     → Close and reopen Claude Code", Colors.DIM))
             print()
-            print(color("  2. Create your first task:", Colors.WHITE))
-            print(color('     → Tell Claude: "Create a new task"', Colors.CYAN))
-            print(color('     → Or: "Create a task for implementing feature X"', Colors.CYAN))
-            print()
-            print(color("  3. Start working with the DAIC workflow:", Colors.WHITE))
+            print(color("  2. Start working with the DAIC workflow:", Colors.WHITE))
             print(color("     → Discuss approach first", Colors.DIM))
             print(color('     → Say "make it so" to implement', Colors.DIM))
             print(color('     → Run "daic" to return to discussion', Colors.DIM))

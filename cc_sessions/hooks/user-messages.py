@@ -118,6 +118,11 @@ if not is_add_trigger_command and current_mode and any(phrase in prompt.lower() 
     set_daic_mode(False)  # Switch to implementation
     context += "[DAIC: Implementation Mode Activated] You may now implement ONLY the immediately discussed steps. DO NOT take **any** actions beyond what was explicitly agreed upon. If instructions were vague, consider the bounds of what was requested and *DO NOT* cross them. When you're done, run the command: daic\n"
 
+# Return to discussion mode via "daic" keyword (works in any mode)
+if re.search(r'\bdaic\b', prompt.lower()):
+    set_daic_mode(True)  # Force discussion mode
+    context += "[DAIC: Discussion Mode Activated] You are now in discussion mode. Collaborate with your pair programmer before implementing.\n"
+
 # Emergency stop (works in any mode)
 if any(word in prompt for word in ["SILENCE", "STOP"]):  # Case sensitive
     set_daic_mode(True)  # Force discussion mode
@@ -127,58 +132,7 @@ if any(word in prompt for word in ["SILENCE", "STOP"]):  # Case sensitive
 if "iterloop" in prompt.lower():
     context += "You have been instructed to iteratively loop over a list. Identify what list the user is referring to, then follow this loop: present one item, wait for the user to respond with questions and discussion points, only continue to the next item when the user explicitly says 'continue' or something similar\n"
 
-# Protocol detection - explicit phrases that trigger protocol reading
-prompt_lower = prompt.lower()
 
-# Context compaction detection
-if any(phrase in prompt_lower for phrase in ["compact", "restart session", "context compaction"]):
-    context += "If the user is asking to compact context, read and follow sessions/protocols/context-compaction.md protocol.\n"
-
-# Task completion detection
-if any(phrase in prompt_lower for phrase in ["complete the task", "finish the task", "task is done", 
-                                               "mark as complete", "close the task", "wrap up the task"]):
-    context += "If the user is asking to complete the task, read and follow sessions/protocols/task-completion.md protocol.\n"
-
-# Task creation detection
-if any(phrase in prompt_lower for phrase in ["create a new task", "create a task", "make a task",
-                                               "new task for", "add a task"]):
-    context += "If the user is asking to create a task, read and follow sessions/protocols/task-creation.md protocol.\n"
-
-# Task switching detection
-if any(phrase in prompt_lower for phrase in ["switch to task", "work on task", "change to task"]):
-    context += "If the user is asking to switch tasks, read and follow sessions/protocols/task-startup.md protocol.\n"
-
-# Task detection patterns (optional feature)
-if config.get("task_detection", {}).get("enabled", True):
-    task_patterns = [
-        r"(?i)we (should|need to|have to) (implement|fix|refactor|migrate|test|research)",
-        r"(?i)create a task for",
-        r"(?i)add this to the (task list|todo|backlog)",
-        r"(?i)we'll (need to|have to) (do|handle|address) (this|that) later",
-        r"(?i)that's a separate (task|issue|problem)",
-        r"(?i)file this as a (bug|task|issue)"
-    ]
-    
-    task_mentioned = any(re.search(pattern, prompt) for pattern in task_patterns)
-    
-    if task_mentioned:
-        # Add task detection note
-        context += """
-[Task Detection Notice]
-The message may reference something that could be a task.
-
-IF you or the user have discovered a potential task that is sufficiently unrelated to the current task, ask if they'd like to create a task file.
-
-Tasks are:
-• More than a couple commands to complete
-• Semantically distinct units of work
-• Work that takes meaningful context
-• Single focused goals (not bundled multiple goals)
-• Things that would take multiple days should be broken down
-• NOT subtasks of current work (those go in the current task file/directory)
-
-If they want to create a task, follow the task creation protocol.
-"""
 
 # Output the context additions
 if context:

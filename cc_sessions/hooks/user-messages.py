@@ -102,7 +102,7 @@ if transcript_path and tiktoken and os.path.exists(transcript_path):
         
         # Token warnings (only show once per session)
         if usable_percentage >= 90 and not warning_90_flag.exists():
-            context += f"\n[90% WARNING] {context_length:,}/160,000 tokens used ({usable_percentage:.1f}%). CRITICAL: Run sessions/protocols/task-completion.md to wrap up this task cleanly!\n"
+            context += f"\n[90% WARNING] {context_length:,}/160,000 tokens used ({usable_percentage:.1f}%). CRITICAL: Context nearly exhausted. Consider wrapping up current work.\n"
             warning_90_flag.parent.mkdir(parents=True, exist_ok=True)
             warning_90_flag.touch()
         elif usable_percentage >= 75 and not warning_75_flag.exists():

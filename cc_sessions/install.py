@@ -301,7 +301,7 @@ class SessionsInstaller:
         # Advanced configuration
         print(color(f"\n\n★ ADVANCED OPTIONS", Colors.BRIGHT + Colors.MAGENTA))
         print(color("─" * 60, Colors.DIM))
-        print(color("  Configure tool blocking, task prefixes, and more", Colors.WHITE))
+        print(color("  Configure tool blocking, trigger phrases, and more", Colors.WHITE))
         print()
         
         advanced = input(color("  Configure advanced options? (y/n): ", Colors.CYAN))

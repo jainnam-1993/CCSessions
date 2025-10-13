@@ -20,7 +20,6 @@ PROJECT_ROOT = get_project_root()
 # All state files in .claude/state/
 STATE_DIR = PROJECT_ROOT / ".claude" / "state"
 DAIC_STATE_FILE = STATE_DIR / "daic-mode.json"
-TASK_STATE_FILE = STATE_DIR / "current_task.json"
 
 # Mode description strings
 DISCUSSION_MODE_MSG = "You are now in Discussion Mode and should focus on discussing and investigating with the user (no edit-based tools)"
@@ -89,35 +88,3 @@ def set_daic_mode(value: str|bool):
     with open(DAIC_STATE_FILE, 'w') as f:
         json.dump({"mode": mode}, f, indent=2)
     return name
-
-# Task and branch state management
-def get_task_state() -> dict:
-    """Get current task state including branch and affected services."""
-    try:
-        with open(TASK_STATE_FILE, 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"task": None, "branch": None, "services": [], "updated": None}
-
-def set_task_state(task: str, branch: str, services: list):
-    """Set current task state."""
-    state = {
-        "task": task,
-        "branch": branch,
-        "services": services,
-        "updated": datetime.now().strftime("%Y-%m-%d")
-    }
-    ensure_state_dir()
-    with open(TASK_STATE_FILE, 'w') as f:
-        json.dump(state, f, indent=2)
-    return state
-
-def add_service_to_task(service: str):
-    """Add a service to the current task's affected services list."""
-    state = get_task_state()
-    if service not in state.get("services", []):
-        state["services"].append(service)
-        ensure_state_dir()
-        with open(TASK_STATE_FILE, 'w') as f:
-            json.dump(state, f, indent=2)
-    return state

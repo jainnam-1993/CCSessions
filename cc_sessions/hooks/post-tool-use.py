@@ -23,16 +23,6 @@ if tool_name == "Task" and in_subagent:
     # Don't show DAIC reminder for Task completion
     in_subagent = True
 
-# Check current mode
-discussion_mode = check_daic_mode_bool()
-
-# Only remind if in implementation mode AND not in a subagent
-implementation_tools = ["Edit", "Write", "MultiEdit", "NotebookEdit"]
-if not discussion_mode and tool_name in implementation_tools and not in_subagent:
-    # Output reminder
-    print("[DAIC Reminder] When you're done implementing, run: daic", file=sys.stderr)
-    mod = True
-
 # Check for cd command in Bash operations
 if tool_name == "Bash":
     command = tool_input.get("command", "")

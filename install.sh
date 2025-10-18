@@ -359,6 +359,16 @@ settings_content='{
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/response-complete.py"
+          }
+        ]
+      }
     ]
   }
 }'

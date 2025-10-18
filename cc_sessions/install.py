@@ -425,6 +425,16 @@ class SessionsInstaller:
                         }
                     ]
                 }
+            ],
+            "Stop": [
+                {
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/response-complete.py" if os.name != 'nt' else "python \"%CLAUDE_PROJECT_DIR%\\.claude\\hooks\\response-complete.py\""
+                        }
+                    ]
+                }
             ]
         }
         

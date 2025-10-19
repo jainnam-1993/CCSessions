@@ -56,7 +56,8 @@ try:
     if most_recent_usage:
         context_length = (
             most_recent_usage.get('input_tokens', 0) +
-            most_recent_usage.get('cache_read_input_tokens', 0)
+            most_recent_usage.get('cache_read_input_tokens', 0) +
+            most_recent_usage.get('cache_creation_input_tokens', 0)
         )
         print(context_length)
     else:
@@ -115,25 +116,6 @@ except:
     echo -e "$progress_bar"
 }
 
-# Get current task with color
-get_current_task() {
-    cyan="\033[38;5;111m"    # 59C2FF entity blue
-    reset="\033[0m"
-    if [[ -f "$cwd/.claude/state/current_task.json" ]]; then
-        task_name=$(python3 -c "
-import sys, json
-try:
-    with open('$cwd/.claude/state/current_task.json', 'r') as f:
-        data = json.load(f)
-        print(data.get('task', 'None'))
-except:
-    print('None')
-" 2>/dev/null)
-        echo -e "${cyan}Task: $task_name${reset}"
-    else
-        echo -e "${cyan}Task: None${reset}"
-    fi
-}
 
 # Get DAIC mode with color
 get_daic_mode() {
@@ -177,26 +159,6 @@ count_edited_files() {
     fi
 }
 
-# Count open tasks with color
-count_open_tasks() {
-    blue="\033[38;5;111m"    # 73B8FF modified blue
-    reset="\033[0m"
-    tasks_dir="$cwd/sessions/tasks"
-    if [[ -d "$tasks_dir" ]]; then
-        # Count .md files that don't contain "Status: done" or "Status: completed"
-        open_count=0
-        for task_file in "$tasks_dir"/*.md; do
-            if [[ -f "$task_file" ]]; then
-                if ! grep -q -E "Status:\s*(done|completed)" "$task_file" 2>/dev/null; then
-                    ((open_count++))
-                fi
-            fi
-        done
-        echo -e "${blue}[$open_count open]${reset}"
-    else
-        echo -e "${blue}[0 open]${reset}"
-    fi
-}
 
 # Get current directory with color
 get_current_directory() {
@@ -209,10 +171,9 @@ get_current_directory() {
 
 # Build the complete statusline
 progress_info=$(calculate_context)
-task_info=$(get_current_task)
 daic_info=$(get_daic_mode)
 directory_info=$(get_current_directory)
 
 # Output the complete statusline in one line with color support
-# Format: Progress bar | Task | DAIC mode | Current directory
-echo -e "$progress_info | $task_info | $daic_info | $directory_info"
+# Format: Progress bar | DAIC mode | Current directory
+echo -e "$progress_info | $daic_info | $directory_info"

@@ -5,7 +5,7 @@ import os
 import sys
 import subprocess
 from pathlib import Path
-from shared_state import get_project_root, ensure_state_dir, get_task_state
+from shared_state import get_project_root, ensure_state_dir
 
 # Get project root
 PROJECT_ROOT = get_project_root()

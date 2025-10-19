@@ -47,8 +47,7 @@ The core innovation is the DAIC (Discussion-Alignment-Implementation-Check) enfo
 
 ### Consumes
 - Claude Code hooks system for behavioral enforcement
-- Git for branch management and enforcement
-- Python 3.8+ with tiktoken for token counting
+- Python 3.8+ for hook execution
 - Shell environment for command execution (Bash/PowerShell/Command Prompt)
 
 ### Provides
@@ -63,11 +62,10 @@ Primary configuration in `sessions/sessions-config.json`:
 - `developer_name` - How Claude addresses the user
 - `trigger_phrases` - Phrases that switch to implementation mode
 - `blocked_tools` - Tools blocked in discussion mode
-- `branch_enforcement.enabled` - Enable/disable git branch checking
-- `task_detection.enabled` - Enable/disable task-based workflows
+- `mcp_blocking.enabled` - Enable/disable MCP tool pattern blocking
+- `mcp_blocking.patterns` - Patterns for detecting file modification MCP tools
 
 State files in `.claude/state/`:
-- `current_task.json` - Active task metadata
 - `daic-mode.json` - Current discussion/implementation mode
 
 Windows-specific configuration in `.claude/settings.json`:
@@ -118,6 +116,13 @@ Windows-specific configuration in `.claude/settings.json`:
 - docs/USAGE_GUIDE.md - Workflow and feature documentation
 - cc_sessions/knowledge/ - Internal architecture documentation
 - README.md - Marketing-focused feature overview
+
+## Obsidian Vault
+
+**Vault Path**: `/Volumes/workplace/tools/Obsidian/01_Projects`
+**Context Primer**: `/Volumes/workplace/tools/Obsidian/01_Projects/Personal/CCSessions/README.md`
+
+> **IMPORTANT**: Start each new session by reading the Context Primer. It contains current status (last work, current focus, blockers), active features with progress, file locations, and all essential context for continuing work on this project.
 
 ## Sessions System Behaviors
 

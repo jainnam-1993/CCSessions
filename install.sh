@@ -5,6 +5,9 @@
 
 set -e  # Exit on error
 
+# Package version
+SESSIONS_VERSION="0.4.0"
+
 # Colors for terminal output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -47,6 +50,20 @@ if [ -z "$CLAUDE_PROJECT_DIR" ]; then
     echo "   To make this permanent, add to your shell profile:"
     echo "   export CLAUDE_PROJECT_DIR=\"$PROJECT_ROOT\""
     echo
+fi
+
+# Version check - skip if already installed with same version
+VERSION_FILE="$PROJECT_ROOT/.claude/state/sessions-version"
+if [ -f "$VERSION_FILE" ]; then
+    INSTALLED_VERSION=$(cat "$VERSION_FILE")
+    if [ "$INSTALLED_VERSION" = "$SESSIONS_VERSION" ]; then
+        echo "✓ cc-sessions v$SESSIONS_VERSION already installed - skipping"
+        exit 0
+    fi
+    echo -e "${CYAN}⬆ Upgrading cc-sessions: v$INSTALLED_VERSION → v$SESSIONS_VERSION${NC}"
+    UPGRADE_MODE=true
+else
+    UPGRADE_MODE=false
 fi
 
 # Check if we're in a git repository (recommended)
@@ -392,6 +409,9 @@ echo -e "${GREEN}✓ Sessions hooks configured in settings.json${NC}"
 
 # Initialize DAIC state
 echo '{"mode": "discussion"}' > "$PROJECT_ROOT/.claude/state/daic-mode.json"
+
+# Store installed version
+echo "$SESSIONS_VERSION" > "$VERSION_FILE"
 
 
 # CLAUDE.md Integration

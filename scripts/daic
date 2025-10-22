@@ -12,8 +12,13 @@ if [[ "$PROJECT_ROOT" == "/" ]]; then
     exit 1
 fi
 
-# Find the hooks directory
-HOOKS_DIR="$PROJECT_ROOT/.claude/hooks"
+# Use central hooks from CC_SESSIONS_PATH
+if [[ -z "$CC_SESSIONS_PATH" ]]; then
+    echo "[DAIC Error] CC_SESSIONS_PATH environment variable not set"
+    exit 1
+fi
+
+HOOKS_DIR="$CC_SESSIONS_PATH/hooks"
 
 # Run Python inline to toggle mode
 python3 -c "

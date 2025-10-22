@@ -4,6 +4,11 @@ import json
 import sys
 import re
 import os
+from pathlib import Path
+
+# Add hook directory to path for shared_state import
+sys.path.insert(0, str(Path(__file__).parent))
+
 try:
     import tiktoken
 except ImportError:
@@ -20,9 +25,11 @@ context = ""
 try:
     from pathlib import Path
     from shared_state import get_project_root
-    PROJECT_ROOT = get_project_root()
+    # Use cwd from input if available
+    cwd = input_data.get("cwd", "")
+    PROJECT_ROOT = Path(cwd) if cwd else get_project_root()
     CONFIG_FILE = PROJECT_ROOT / "sessions" / "sessions-config.json"
-    
+
     if CONFIG_FILE.exists():
         with open(CONFIG_FILE, 'r') as f:
             config = json.load(f)
@@ -95,8 +102,7 @@ if transcript_path and tiktoken and os.path.exists(transcript_path):
         usable_percentage = (context_length / 160000) * 100
         
         # Check for warning flag files to avoid repeating warnings
-        from pathlib import Path
-        PROJECT_ROOT = get_project_root()
+        # PROJECT_ROOT already defined above, reuse it
         warning_75_flag = PROJECT_ROOT / ".claude" / "state" / "context-warning-75.flag"
         warning_90_flag = PROJECT_ROOT / ".claude" / "state" / "context-warning-90.flag"
         

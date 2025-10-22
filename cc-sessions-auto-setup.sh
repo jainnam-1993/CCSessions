@@ -5,9 +5,34 @@
 
 set -e
 
+# Package version
+SESSIONS_VERSION="0.5.3"
+
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CC_SESSIONS_INSTALL="$SCRIPT_DIR/install.sh"
+
+# Skip setup if we're in any .claude directory
+if [[ "$PWD" == *"/.claude"* ]]; then
+    exit 0
+fi
+
+# Check for CC_SESSIONS_PATH environment variable
+if [[ -z "$CC_SESSIONS_PATH" ]]; then
+    echo "❌ CC_SESSIONS_PATH not set. Add to ~/.zshrc:"
+    echo "  export CC_SESSIONS_PATH=\"/Volumes/workplace/Scripts/cc-sessions\""
+    exit 1
+fi
+
+# Settings version check - skip if already up to date
+SETTINGS_VERSION_FILE=".claude/state/settings-version"
+if [[ -f "$SETTINGS_VERSION_FILE" ]]; then
+    INSTALLED_VERSION=$(cat "$SETTINGS_VERSION_FILE")
+    if [[ "$INSTALLED_VERSION" == "$SESSIONS_VERSION" ]]; then
+        # Silent skip - already configured
+        exit 0
+    fi
+fi
 
 echo "🔧 cc-sessions Auto Setup"
 echo "=========================="
@@ -17,17 +42,6 @@ if [[ ! -f "$CC_SESSIONS_INSTALL" ]]; then
     echo "❌ cc-sessions installer not found at: $CC_SESSIONS_INSTALL"
     echo "Please ensure cc-sessions is installed in the same directory as this script"
     exit 1
-fi
-
-# Skip setup if we're in any .claude directory
-if [[ "$PWD" == *"/.claude"* ]]; then
-    exit 0
-fi
-
-# Check if cc-sessions is already configured
-if [[ -f ".claude/state/daic-mode.json" && -f ".claude/hooks/sessions-enforce.py" ]]; then
-    echo "✅ cc-sessions already configured in this project, skipping setup"
-    exit 0
 fi
 
 # Check if expect is installed

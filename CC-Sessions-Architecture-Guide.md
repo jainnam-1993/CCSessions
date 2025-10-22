@@ -12,7 +12,7 @@ cc-sessions transforms Claude Code into a structured workflow management system 
 ├── pyproject.toml              # Python package configuration
 ├── install.js                  # Node.js installer wrapper
 ├── install.sh                  # Bash installer
-├── cc_sessions/                # Python package directory
+├── hooks/                      # Hook scripts directory
 │   ├── __init__.py
 │   ├── install.py              # Core installer logic ⭐ KEY FILE
 │   ├── hooks/                  # Hook system components
@@ -31,7 +31,7 @@ cc-sessions transforms Claude Code into a structured workflow management system 
 
 ## Critical Files Deep Dive
 
-### 1. cc_sessions/install.py ⭐
+### 1. install.sh ⭐
 **Purpose**: Cross-platform installer with hook configuration
 
 **Key Sections:**
@@ -47,7 +47,7 @@ cc-sessions transforms Claude Code into a structured workflow management system 
     "matcher": "Write|Edit|MultiEdit|Task|Bash|mcp__serena__.*",
     "hooks": [{
         "type": "command",
-        "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/sessions-enforce.py"
+        "command": "$CC_SESSIONS_PATH/hooks/sessions-enforce.py"
     }]
 }]
 ```
@@ -57,7 +57,7 @@ cc-sessions transforms Claude Code into a structured workflow management system 
 - Installs all hook scripts to `.claude/hooks/`
 - Sets up session directories and protocols
 
-### 2. cc_sessions/hooks/sessions-enforce.py ⭐
+### 2. hooks/sessions-enforce.py ⭐
 **Purpose**: Core DAIC enforcement engine
 
 **Critical Sections:**

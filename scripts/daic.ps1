@@ -12,8 +12,13 @@ if (-not (Test-Path (Join-Path $ProjectRoot ".claude"))) {
     exit 1
 }
 
-# Find the hooks directory
-$HooksDir = Join-Path $ProjectRoot ".claude" "hooks"
+# Use central hooks from CC_SESSIONS_PATH
+if (-not $env:CC_SESSIONS_PATH) {
+    Write-Host "[DAIC Error] CC_SESSIONS_PATH environment variable not set" -ForegroundColor Red
+    exit 1
+}
+
+$HooksDir = Join-Path $env:CC_SESSIONS_PATH "hooks"
 
 # Check if Python is available
 $PythonCmd = $null

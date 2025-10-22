@@ -5,10 +5,17 @@ import os
 import sys
 import subprocess
 from pathlib import Path
+
+# Add hook directory to path for shared_state import
+sys.path.insert(0, str(Path(__file__).parent))
 from shared_state import get_project_root, ensure_state_dir
 
-# Get project root
-PROJECT_ROOT = get_project_root()
+# Load input
+input_data = json.load(sys.stdin)
+cwd = input_data.get("cwd", "")
+
+# Get project root - use cwd from input if available
+PROJECT_ROOT = Path(cwd) if cwd else get_project_root()
 
 # Get developer name from config
 try:

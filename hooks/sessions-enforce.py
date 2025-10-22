@@ -3,10 +3,18 @@
 import json
 import sys
 from pathlib import Path
+
+# Add hook directory to path for shared_state import
+sys.path.insert(0, str(Path(__file__).parent))
 from shared_state import check_daic_mode_bool, get_project_root
 
+# Load input
+input_data = json.load(sys.stdin)
+cwd = input_data.get("cwd", "")
+
 # Load configuration from project's .claude directory
-PROJECT_ROOT = get_project_root()
+# Use cwd from input if available
+PROJECT_ROOT = Path(cwd) if cwd else get_project_root()
 CONFIG_FILE = PROJECT_ROOT / "sessions" / "sessions-config.json"
 
 # Default configuration (used if config file doesn't exist)
@@ -41,10 +49,7 @@ def load_config():
             pass
     return DEFAULT_CONFIG
 
-
-
-# Load input
-input_data = json.load(sys.stdin)
+# Extract tool info from already loaded input_data
 tool_name = input_data.get("tool_name", "")
 tool_input = input_data.get("tool_input", {})
 
@@ -65,8 +70,10 @@ if tool_name == "Bash":
     # Check for write patterns
     import re
     write_patterns = [
-        r'>\s*[^>]',  # Output redirection
+        r'>\s*[^>|]',  # Output redirection (not >> or pipe)
         r'>>',         # Append redirection
+        r'<<',         # Heredoc (writes via cat/command)
+        r'<<<',        # Here-string
         r'\btee\b',    # tee command
         r'\bmv\b',     # move/rename
         r'\bcp\b',     # copy

@@ -24,9 +24,6 @@ The core innovation is the DAIC (Discussion-Alignment-Implementation-Check) enfo
 - `cc-sessions-auto-setup.sh` - Automated installation wrapper with predefined responses
 
 ## Installation Methods
-- `pipx install cc-sessions` - Isolated Python install (recommended)
-- `npm install -g cc-sessions` - Global npm install
-- `pip install cc-sessions` - Direct pip install
 - Direct bash: `./install.sh` from repository
 - Automated: `./cc-sessions-auto-setup.sh` - Uses expect to automate interactive prompts
 
@@ -69,7 +66,7 @@ State files in `.claude/state/`:
 - `daic-mode.json` - Current discussion/implementation mode
 
 Windows-specific configuration in `.claude/settings.json`:
-- Hook commands use Windows-style paths with `%CLAUDE_PROJECT_DIR%`
+- Hook commands use absolute paths from `$CC_SESSIONS_PATH`
 - Python interpreter explicitly specified for `.py` hook execution
 - Native `.cmd` and `.ps1` script support for daic command
 
@@ -114,7 +111,7 @@ Windows-specific configuration in `.claude/settings.json`:
 
 - docs/INSTALL.md - Detailed installation guide
 - docs/USAGE_GUIDE.md - Workflow and feature documentation
-- cc_sessions/knowledge/ - Internal architecture documentation
+- knowledge/ - Internal architecture documentation
 - README.md - Marketing-focused feature overview
 
 ## Obsidian Vault

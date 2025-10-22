@@ -6,7 +6,7 @@
 set -e  # Exit on error
 
 # Package version
-SESSIONS_VERSION="0.4.0"
+SESSIONS_VERSION="0.5.3"
 
 # Colors for terminal output
 RED='\033[0;31m'
@@ -52,18 +52,36 @@ if [ -z "$CLAUDE_PROJECT_DIR" ]; then
     echo
 fi
 
-# Version check - skip if already installed with same version
-VERSION_FILE="$PROJECT_ROOT/.claude/state/sessions-version"
-if [ -f "$VERSION_FILE" ]; then
-    INSTALLED_VERSION=$(cat "$VERSION_FILE")
-    if [ "$INSTALLED_VERSION" = "$SESSIONS_VERSION" ]; then
-        echo "✓ cc-sessions v$SESSIONS_VERSION already installed - skipping"
-        exit 0
-    fi
-    echo -e "${CYAN}⬆ Upgrading cc-sessions: v$INSTALLED_VERSION → v$SESSIONS_VERSION${NC}"
-    UPGRADE_MODE=true
+# Check for CC_SESSIONS_PATH environment variable (required for central hooks)
+if [ -z "$CC_SESSIONS_PATH" ]; then
+    echo -e "${RED}❌ CC_SESSIONS_PATH environment variable not set${NC}"
+    echo ""
+    echo "Please add to your ~/.zshrc:"
+    echo "  export CC_SESSIONS_PATH=\"/Volumes/workplace/Scripts/cc-sessions\""
+    echo ""
+    echo "Then run: source ~/.zshrc"
+    exit 1
+fi
+
+# Validate hooks directory exists
+if [ ! -d "$CC_SESSIONS_PATH/hooks" ]; then
+    echo -e "${RED}❌ Hooks not found at: $CC_SESSIONS_PATH/hooks${NC}"
+    echo "Please ensure CC_SESSIONS_PATH points to the correct cc-sessions installation"
+    exit 1
+fi
+
+# Settings version check - skip settings.json generation if already up to date
+SETTINGS_VERSION_FILE="$PROJECT_ROOT/.claude/state/settings-version"
+CURRENT_SETTINGS_VERSION=$(cat "$SETTINGS_VERSION_FILE" 2>/dev/null || echo "")
+
+if [ "$CURRENT_SETTINGS_VERSION" = "$SESSIONS_VERSION" ]; then
+    echo -e "${GREEN}✓ Settings v$SESSIONS_VERSION already configured - skipping settings.json generation${NC}"
+    SKIP_SETTINGS=true
 else
-    UPGRADE_MODE=false
+    if [ -n "$CURRENT_SETTINGS_VERSION" ]; then
+        echo -e "${CYAN}⬆ Upgrading settings: v$CURRENT_SETTINGS_VERSION → v$SESSIONS_VERSION${NC}"
+    fi
+    SKIP_SETTINGS=false
 fi
 
 # Check if we're in a git repository (recommended)
@@ -82,32 +100,43 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     done
 fi
 
+# Cleanup old installation files
+if [ -d "$PROJECT_ROOT/.claude/hooks" ]; then
+    echo "Cleaning up old local hooks..."
+    rm -f "$PROJECT_ROOT/.claude/hooks/"*.py
+fi
+
+# Delete old version file
+if [ -f "$PROJECT_ROOT/.claude/state/sessions-version" ]; then
+    rm -f "$PROJECT_ROOT/.claude/state/sessions-version"
+fi
+
+# Cleanup old local statusline script
+if [ -f "$PROJECT_ROOT/.claude/statusline-script.sh" ]; then
+    echo "Cleaning up old local statusline script..."
+    rm -f "$PROJECT_ROOT/.claude/statusline-script.sh"
+fi
+
 # Create necessary directories
 echo "Creating directory structure..."
-mkdir -p "$PROJECT_ROOT/.claude/hooks"
 mkdir -p "$PROJECT_ROOT/.claude/state"
 mkdir -p "$PROJECT_ROOT/.claude/commands"
 mkdir -p "$PROJECT_ROOT/sessions"
 
-# Copy hooks
-echo "Installing hooks..."
-cp "$SCRIPT_DIR/cc_sessions/hooks/"*.py "$PROJECT_ROOT/.claude/hooks/"
-chmod +x "$PROJECT_ROOT/.claude/hooks/"*.py
-
-# Copy commands
+# Copy commands (customizable by user)
 echo "Installing commands..."
-for file in "$SCRIPT_DIR/cc_sessions/commands"/*.md; do
+for file in "$SCRIPT_DIR/commands"/*.md; do
     [ -e "$file" ] && cp "$file" "$PROJECT_ROOT/.claude/commands/"
 done
 
 # Install daic command
 echo "Installing daic command..."
 if [ -w "/usr/local/bin" ]; then
-    cp "$SCRIPT_DIR/cc_sessions/scripts/daic" "/usr/local/bin/"
+    cp "$SCRIPT_DIR/scripts/daic" "/usr/local/bin/"
     chmod +x "/usr/local/bin/daic"
 else
     echo "⚠️  Cannot write to /usr/local/bin. Trying with sudo..."
-    sudo cp "$SCRIPT_DIR/cc_sessions/scripts/daic" "/usr/local/bin/"
+    sudo cp "$SCRIPT_DIR/scripts/daic" "/usr/local/bin/"
     sudo chmod +x "/usr/local/bin/daic"
 fi
 
@@ -154,11 +183,11 @@ while true; do
 done
 
 if [[ $install_statusline == "y" ]]; then
-    if [ -f "$SCRIPT_DIR/cc_sessions/scripts/statusline-script.sh" ]; then
-        echo -e "${DIM}  Installing statusline script...${NC}"
-        cp "$SCRIPT_DIR/cc_sessions/scripts/statusline-script.sh" "$PROJECT_ROOT/.claude/"
-        chmod +x "$PROJECT_ROOT/.claude/statusline-script.sh"
-        echo -e "${GREEN}  ✓ Statusline installed successfully${NC}"
+    if [ -f "$SCRIPT_DIR/scripts/statusline-script.sh" ]; then
+        echo -e "${DIM}  Statusline will use central installation...${NC}"
+        # Make sure central script is executable
+        chmod +x "$SCRIPT_DIR/scripts/statusline-script.sh"
+        echo -e "${GREEN}  ✓ Statusline configured successfully${NC}"
     else
         echo -e "${YELLOW}  ⚠ Statusline script not found in package${NC}"
     fi
@@ -324,71 +353,72 @@ cat > "$PROJECT_ROOT/sessions/sessions-config.json" << EOF
 }
 EOF
 
-# Create or update .claude/settings.json with all hooks
-echo -e "${CYAN}Configuring hooks in settings.json...${NC}"
-if [ -f "$PROJECT_ROOT/.claude/settings.json" ]; then
-    echo -e "${CYAN}Found existing settings.json, merging sessions hooks...${NC}"
-    # Backup existing settings
-    cp "$PROJECT_ROOT/.claude/settings.json" "$PROJECT_ROOT/.claude/settings.json.bak"
-fi
+# Create or update .claude/settings.json with all hooks (only if needed)
+if [ "$SKIP_SETTINGS" = false ]; then
+    echo -e "${CYAN}Configuring hooks in settings.json...${NC}"
+    if [ -f "$PROJECT_ROOT/.claude/settings.json" ]; then
+        echo -e "${CYAN}Found existing settings.json, merging sessions hooks...${NC}"
+        # Backup existing settings
+        cp "$PROJECT_ROOT/.claude/settings.json" "$PROJECT_ROOT/.claude/settings.json.bak"
+    fi
 
-# Create settings.json with all hooks
-settings_content='{
-  "hooks": {
-    "UserPromptSubmit": [
+# Create settings.json with all hooks (using absolute paths)
+settings_content="{
+  \"hooks\": {
+    \"UserPromptSubmit\": [
       {
-        "hooks": [
+        \"hooks\": [
           {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/user-messages.py"
+            \"type\": \"command\",
+            \"command\": \"$CC_SESSIONS_PATH/hooks/user-messages.py\"
           }
         ]
       }
     ],
-    "PreToolUse": [
+    \"PreToolUse\": [
       {
-        "matcher": "Write|Edit|MultiEdit|Task|Bash|mcp__.*",
-        "hooks": [
+        \"matcher\": \"Write|Edit|MultiEdit|Task|Bash|mcp__.*\",
+        \"hooks\": [
           {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/sessions-enforce.py"
+            \"type\": \"command\",
+            \"command\": \"$CC_SESSIONS_PATH/hooks/sessions-enforce.py\"
           }
         ]
       }
     ],
-    "PostToolUse": [
+    \"PostToolUse\": [
       {
-        "hooks": [
+        \"hooks\": [
           {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use.py"
+            \"type\": \"command\",
+            \"command\": \"$CC_SESSIONS_PATH/hooks/post-tool-use.py\"
           }
         ]
       }
     ],
-    "SessionStart": [
+    \"SessionStart\": [
       {
-        "matcher": "startup|clear",
-        "hooks": [
+        \"matcher\": \"startup|clear\",
+        \"hooks\": [
           {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.py"
+            \"type\": \"command\",
+            \"command\": \"$CC_SESSIONS_PATH/hooks/session-start.py\"
           }
         ]
       }
     ],
-    "Stop": [
+    \"Stop\": [
       {
-        "hooks": [
+        \"hooks\": [
           {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/response-complete.py"
+            \"type\": \"command\",
+            \"command\": \"$CC_SESSIONS_PATH/hooks/response-complete.py\"
           }
         ]
       }
     ]
   }
-}'
+}"
 
 # Add statusline if requested
 if [ "$install_statusline" = "y" ]; then
@@ -398,20 +428,21 @@ if [ "$install_statusline" = "y" ]; then
     settings_content="${settings_content},
   \"statusLine\": {
     \"type\": \"command\",
-    \"command\": \"\$CLAUDE_PROJECT_DIR/.claude/statusline-script.sh\",
+    \"command\": \"$CC_SESSIONS_PATH/scripts/statusline-script.sh\",
     \"padding\": 0
   }
 }"
 fi
 
-echo "$settings_content" > "$PROJECT_ROOT/.claude/settings.json"
-echo -e "${GREEN}✓ Sessions hooks configured in settings.json${NC}"
+    echo "$settings_content" > "$PROJECT_ROOT/.claude/settings.json"
+    echo -e "${GREEN}✓ Sessions hooks configured in settings.json${NC}"
 
-# Initialize DAIC state
+    # Store settings version
+    echo "$SESSIONS_VERSION" > "$SETTINGS_VERSION_FILE"
+fi
+
+# Initialize DAIC state (always ensure this exists)
 echo '{"mode": "discussion"}' > "$PROJECT_ROOT/.claude/state/daic-mode.json"
-
-# Store installed version
-echo "$SESSIONS_VERSION" > "$VERSION_FILE"
 
 
 # CLAUDE.md Integration
@@ -424,12 +455,12 @@ echo
 # Create or update CLAUDE.md
 if [ ! -f "$PROJECT_ROOT/CLAUDE.md" ]; then
     echo "No existing CLAUDE.md found, installing sessions as your CLAUDE.md..."
-    cp "$SCRIPT_DIR/cc_sessions/templates/CLAUDE.sessions.md" "$PROJECT_ROOT/CLAUDE.md"
+    cp "$SCRIPT_DIR/templates/CLAUDE.sessions.md" "$PROJECT_ROOT/CLAUDE.md"
     echo "✅ CLAUDE.md created with complete sessions behaviors"
 else
     echo "CLAUDE.md already exists, preserving your project-specific rules..."
     # Copy CLAUDE.sessions.md as separate file
-    cp "$SCRIPT_DIR/cc_sessions/templates/CLAUDE.sessions.md" "$PROJECT_ROOT/CLAUDE.sessions.md"
+    cp "$SCRIPT_DIR/templates/CLAUDE.sessions.md" "$PROJECT_ROOT/CLAUDE.sessions.md"
     
     # Check if the include already exists
     if grep -q "@CLAUDE.sessions.md" "$PROJECT_ROOT/CLAUDE.md"; then

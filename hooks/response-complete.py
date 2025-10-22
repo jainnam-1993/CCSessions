@@ -3,6 +3,9 @@
 import json
 import sys
 from pathlib import Path
+
+# Add hook directory to path for shared_state import
+sys.path.insert(0, str(Path(__file__).parent))
 from shared_state import check_daic_mode_bool, set_daic_mode
 
 # Load input

@@ -3,6 +3,9 @@
 import json
 import sys
 from pathlib import Path
+
+# Add hook directory to path for shared_state import
+sys.path.insert(0, str(Path(__file__).parent))
 from shared_state import check_daic_mode_bool, get_project_root
 
 # Load input
@@ -13,7 +16,8 @@ cwd = input_data.get("cwd", "")
 mod = False
 
 # Check if we're in a subagent context
-project_root = get_project_root()
+# Use cwd from input (provided by Claude Code) instead of walking up directories
+project_root = Path(cwd) if cwd else get_project_root()
 subagent_flag = project_root / '.claude' / 'state' / 'in_subagent_context.flag'
 in_subagent = subagent_flag.exists()
 

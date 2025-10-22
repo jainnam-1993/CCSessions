@@ -16,8 +16,13 @@ echo [DAIC Error] Could not find .claude directory in current path or parent dir
 exit /b 1
 
 :found_claude
-REM Find the hooks directory
-set HOOKS_DIR=%PROJECT_ROOT%\.claude\hooks
+REM Use central hooks from CC_SESSIONS_PATH
+if not defined CC_SESSIONS_PATH (
+    echo [DAIC Error] CC_SESSIONS_PATH environment variable not set
+    exit /b 1
+)
+
+set HOOKS_DIR=%CC_SESSIONS_PATH%\hooks
 
 REM Check if Python is available as python or python3
 where python >nul 2>nul
